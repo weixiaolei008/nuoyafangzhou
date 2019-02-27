@@ -1,0 +1,5 @@
+rootProject.name = 'devops-portal'
+ext{
+  dockerTag = "dev"
+  dockerGroup = "devops"
+}

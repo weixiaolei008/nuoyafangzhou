@@ -1,0 +1,76 @@
+//https://segmentfault.com/a/1190000008968295
+buildscript {
+  repositories {
+    maven { url "http://10.108.10.53:8081/repository/aliyun/" }
+    maven { url "http://10.108.10.53:8081/repository/maven-snapshots/" }
+  }
+  dependencies {
+    classpath("com.anji.devops:docker-plugin:1.0.4-SNAPSHOT")
+  }
+}
+
+plugins {
+  id "com.moowork.node" version "1.1.1"
+  id 'java'
+}
+apply plugin: 'com.anji.devops.docker-plugin'
+
+def env = System.getProperty("profile") ?: "dev"
+buildDir="frontend"
+//调用npm run build命令的Gradle任务
+task npmBuild(type: NpmTask, dependsOn: npmInstall) {
+  group = 'node'
+  args = ['run', 'build']
+}
+//调用npm run dev
+task npmDev(type: NpmTask, dependsOn: npmInstall) {
+  group = 'node'
+  args = ['run', 'dev']
+}
+
+task cleanDocker(type: Delete) {
+  delete fileTree("${buildDir}/docker") {
+    include '**/*'
+  }
+}
+task copyDockerfile(type: Copy) {
+  group = "docker"
+  dependsOn cleanDocker,npmBuild
+  from "./dist","Dockerfile","default.conf"
+  into "${project.buildDir}/docker"
+}/*
+docker{
+  registryCredentials {
+    url = 'http://10.108.11.63:5678'
+    username = 'devops@Anji'
+    password = 'devops@Anji123'
+  }
+}
+import com.bmuschko.gradle.docker.tasks.image.*
+task buildImage(type: DockerBuildImage) {
+  dependsOn copyDockerfile
+  def destFile = file("frontend/docker/Dockerfile")
+  group = "docker"
+  inputDir = destFile.parentFile
+  tags = [
+    "harbor.anji-allways.com/${dockerGroup}/${project.name}:${dockerTag}".toString()
+  ]
+}
+task tagImage(type: DockerTagImage,dependsOn: buildImage){
+  imageId = ''
+  repository = "harbor.anji-allways.com/${dockerGroup}/${project.name}"
+  tag = "${dockerTag}"
+  doFirst{
+    imageId = buildImage.getImageId()
+  }
+}
+task pushImage(type: DockerPushImage,dependsOn: tagImage){
+  imageName = tagImage.repository
+  tag =  tagImage.tag
+}*/
+//1、生成镜像并上传：
+// gradle pushImage -xTest -PdockerTag=dev1.0.3 -PdockerGroup=devops
+//2、在10.108.11.63执行如下命令：
+// docker stop devops-portal && docker rm devops-portal
+// docker run -p 8081:80 --name devops-portal harbor.anji-allways.com/devops/devops-portal:dev1.0.3 &
+//3、访问 http://10.108.11.63:8081/
